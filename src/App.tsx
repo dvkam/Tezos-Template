@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAccountAddress, sync, unsync } from "./Wallet";
+import { getAccountAddress, switchAccount, unsync } from "./Wallet";
 
 export function getShorterAccount(address: string) {
   const lastIndex = address.length;
@@ -26,13 +26,30 @@ function App() {
     getAccountAddress().then((r) =>
       r
         ? unsync().then(() => setWalletAddress(undefined))
-        : sync()
+        : switchAccount()
             .then((address) => setWalletAddress(address))
             .catch(() => {
-              setError("An error occurred while syncing. Please try again.");
+              alert(
+                "An error occurred while switching accounts. Please refresh and try again."
+              );
+              // setError(
+              //   "An error occurred while switching accounts. Please refresh and try again."
+              // );
               setWalletAddress(undefined);
             })
     );
+  };
+
+  const handleSwitchAccount = async () => {
+    setError(undefined); // Clear any existing error message
+
+    try {
+      const address = await switchAccount();
+      setWalletAddress(address);
+    } catch (error) {
+      alert("An error occurred while switching accounts. Please try again.");
+      //setError("An error occurred while switching accounts. Please try again.");
+    }
   };
 
   return (
@@ -49,10 +66,25 @@ function App() {
           flexDirection: "column",
         }}
       >
-        <button onClick={handleWalletAction}>
+        <button
+          style={{
+            margin: "5px",
+          }}
+          onClick={handleWalletAction}
+        >
           {walletAddress ? "Unsync" : "Sync"}
         </button>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {walletAddress && (
+          <button
+            style={{
+              margin: "5px",
+            }}
+            onClick={handleSwitchAccount}
+          >
+            Switch Account
+          </button>
+        )}
+        {/* {error && <p style={{ color: "red" }}>{error}</p>} */}
         {walletAddress && (
           <>
             <p style={{ fontWeight: "normal" }}>Full Wallet Address: </p>
@@ -62,7 +94,7 @@ function App() {
         {walletAddress && (
           <>
             <p style={{ fontWeight: "bold" }}>
-              In case you dont want to display the whole address:{" "}
+              In case you don't want to display the whole address:{" "}
             </p>
             <span style={{ fontWeight: "bold" }}>
               {getShorterAccount(walletAddress)}

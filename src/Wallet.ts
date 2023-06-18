@@ -35,6 +35,10 @@ export const sync = () =>
       return permissions.address;
     })
     .catch((e) => {
+      beaconWallet.clearActiveAccount();
       console.error("An error occurred while requesting permissions:", e);
-      return undefined; // Return a default value (e.g., undefined) in case of an error
+      throw e;
+      //return undefined; // Return a default value (e.g., undefined) in case of an error
     });
+
+export const switchAccount = () => sync();
