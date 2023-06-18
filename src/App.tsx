@@ -84,7 +84,7 @@ function App() {
             Switch Account
           </button>
         )}
-        {/* {error && <p style={{ color: "red" }}>{error}</p>} */}
+        {error && <p style={{ color: "red" }}>{error}</p>}
         {walletAddress && (
           <>
             <p style={{ fontWeight: "normal" }}>Full Wallet Address: </p>
