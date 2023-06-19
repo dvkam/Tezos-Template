@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAccountAddress, switchAccount, unsync } from "./Wallet";
+import { getAccountAddress, switchAccount, unsync, balance } from "./Wallet";
 
 export function getShorterAccount(address: string) {
   const lastIndex = address.length;
@@ -16,9 +16,33 @@ function App() {
   );
   const [error, setError] = useState<string | undefined>(undefined);
 
+  const [balanceValue, setBalanceValue] = useState<number | undefined>(
+    undefined
+  );
+
   useEffect(() => {
     getAccountAddress().then((address) => setWalletAddress(address));
   }, []);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        if (walletAddress) {
+          const balanceResult = await balance();
+          setBalanceValue(balanceResult.toNumber() / 1000000);
+        } else {
+          setBalanceValue(undefined);
+        }
+      } catch (error) {
+        console.log(error);
+        setError(
+          "An error occurred while fetching the balance. Please try again."
+        );
+      }
+    };
+
+    fetchBalance();
+  }, [walletAddress]);
 
   const handleWalletAction = () => {
     setError(undefined); // Clear any existing error message
@@ -99,6 +123,16 @@ function App() {
             <span style={{ fontWeight: "bold" }}>
               {getShorterAccount(walletAddress)}
             </span>
+          </>
+        )}
+        {walletAddress && (
+          <>
+            {/* Rest of your code */}
+            {balanceValue !== undefined ? (
+              <p style={{ fontWeight: "bold" }}>Balance: {balanceValue} ꜩ</p>
+            ) : (
+              <p>Loading balance...</p>
+            )}
           </>
         )}
       </div>

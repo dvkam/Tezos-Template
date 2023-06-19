@@ -42,3 +42,25 @@ export const sync = () =>
     });
 
 export const switchAccount = () => sync();
+
+// export const balance = () => {
+//   getAccountAddress().then((address) => {
+//     if (address) {
+//       return tezos.tz.getBalance(address);
+//     } else {
+//       throw new Error("No active account found");
+//     }
+//   });
+//   .then((balance) => console.log(`${balance.toNumber() / 1000000} ꜩ`))
+//   .catch((error) => console.log(JSON.stringify(error)));
+// };
+
+export const balance = () => {
+  return getAccountAddress().then((address) => {
+    if (address) {
+      return tezos.tz.getBalance(address);
+    } else {
+      throw new Error("No active account found");
+    }
+  });
+};
