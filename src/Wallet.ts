@@ -23,7 +23,7 @@ export const getAccountAddress = () =>
     .then((r) => (r ? r.address : undefined));
 
 export const isAccountSynced = () => {
-  getAccountAddress().then((r) => r !== undefined);
+  void getAccountAddress().then((r) => r !== undefined);
 };
 
 export const unsync = () => beaconWallet.clearActiveAccount();
@@ -35,7 +35,7 @@ export const sync = () =>
       return permissions.address;
     })
     .catch((e) => {
-      beaconWallet.clearActiveAccount();
+      void beaconWallet.clearActiveAccount();
       console.error("An error occurred while requesting permissions:", e);
       throw e;
       //return undefined; // Return a default value (e.g., undefined) in case of an error

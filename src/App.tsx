@@ -1,27 +1,18 @@
 import { useEffect, useState } from "react";
 import { getAccountAddress, switchAccount, unsync, balance } from "./Wallet";
 
-export function getShorterAccount(address: string) {
-  const lastIndex = address.length;
-  return (
-    address.substring(0, 5) +
-    "..." +
-    address.substring(lastIndex - 5, lastIndex)
-  );
-}
-
 function App() {
   const [walletAddress, setWalletAddress] = useState<string | undefined>(
     undefined
   );
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [, setError] = useState<string | undefined>(undefined);
 
   const [balanceValue, setBalanceValue] = useState<number | undefined>(
     undefined
   );
 
   useEffect(() => {
-    getAccountAddress().then((address) => setWalletAddress(address));
+    void getAccountAddress().then((address) => setWalletAddress(address));
   }, []);
 
   useEffect(() => {
@@ -41,13 +32,13 @@ function App() {
       }
     };
 
-    fetchBalance();
+    void fetchBalance();
   }, [walletAddress]);
 
   const handleWalletAction = () => {
     setError(undefined); // Clear any existing error message
 
-    getAccountAddress().then((r) =>
+    void getAccountAddress().then((r) =>
       r
         ? unsync().then(() => setWalletAddress(undefined))
         : switchAccount()
@@ -56,24 +47,31 @@ function App() {
               alert(
                 "An error occurred while switching accounts. Please refresh and try again."
               );
-              // setError(
-              //   "An error occurred while switching accounts. Please refresh and try again."
-              // );
               setWalletAddress(undefined);
             })
     );
   };
 
-  const handleSwitchAccount = async () => {
+  const handleSwitchAccount = (): void => {
     setError(undefined); // Clear any existing error message
 
-    try {
-      const address = await switchAccount();
-      setWalletAddress(address);
-    } catch (error) {
-      alert("An error occurred while switching accounts. Please try again.");
-      //setError("An error occurred while switching accounts. Please try again.");
-    }
+    switchAccount()
+      .then((address) => {
+        setWalletAddress(address);
+      })
+      .catch(() => {
+        alert("An error occurred while switching accounts. Please try again.");
+        setWalletAddress(undefined);
+      });
+  };
+
+  const getShorterAccount = (address: string) => {
+    const lastIndex = address.length;
+    return (
+      address.substring(0, 5) +
+      "..." +
+      address.substring(lastIndex - 5, lastIndex)
+    );
   };
 
   return (
@@ -108,7 +106,6 @@ function App() {
             Switch Account
           </button>
         )}
-        {error && <p style={{ color: "red" }}>{error}</p>}
         {walletAddress && (
           <>
             <p style={{ fontWeight: "normal" }}>Full Wallet Address: </p>
