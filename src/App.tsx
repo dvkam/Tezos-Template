@@ -45,7 +45,7 @@ function App() {
             .then((address) => setWalletAddress(address))
             .catch(() => {
               alert(
-                "An error occurred while switching accounts. Please refresh and try again."
+                "An error occurred while switching accounts. Please try again."
               );
               setWalletAddress(undefined);
             })
@@ -124,7 +124,6 @@ function App() {
         )}
         {walletAddress && (
           <>
-            {/* Rest of your code */}
             {balanceValue !== undefined ? (
               <p style={{ fontWeight: "bold" }}>Balance: {balanceValue} ꜩ</p>
             ) : (

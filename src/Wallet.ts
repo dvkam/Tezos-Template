@@ -1,6 +1,6 @@
 import { TezosToolkit } from "@taquito/taquito";
 import { BeaconWallet } from "@taquito/beacon-wallet";
-import { NetworkType } from "@airgap/beacon-sdk";
+import { NetworkType } from "@airgap/beacon-dapp";
 
 export const getNetworkType = () => {
   return NetworkType.GHOSTNET;
@@ -38,22 +38,9 @@ export const sync = () =>
       void beaconWallet.clearActiveAccount();
       console.error("An error occurred while requesting permissions:", e);
       throw e;
-      //return undefined; // Return a default value (e.g., undefined) in case of an error
     });
 
 export const switchAccount = () => sync();
-
-// export const balance = () => {
-//   getAccountAddress().then((address) => {
-//     if (address) {
-//       return tezos.tz.getBalance(address);
-//     } else {
-//       throw new Error("No active account found");
-//     }
-//   });
-//   .then((balance) => console.log(`${balance.toNumber() / 1000000} ꜩ`))
-//   .catch((error) => console.log(JSON.stringify(error)));
-// };
 
 export const balance = () => {
   return getAccountAddress().then((address) => {
