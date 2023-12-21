@@ -6,11 +6,11 @@ export const getNetworkType = () => {
   return NetworkType.GHOSTNET;
 };
 
-export const getNetworkRCP = () => {
+export const getNetworkRPC = () => {
   return "https://ghostnet.ecadinfra.com";
 };
 
-const tezos = new TezosToolkit(getNetworkRCP());
+const tezos = new TezosToolkit(getNetworkRPC());
 const beaconWallet = new BeaconWallet({
   name: "Example",
   preferredNetwork: getNetworkType(),
