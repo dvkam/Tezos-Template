@@ -1,4 +1,11 @@
-> The favicon and specific background colors are from the Tezos [Visual Identity](https://tezos.com/visual-identity/) guide.
+# Tezos Blockchain dApp
+
+This is a simple dApp template that demonstrates the integration and interaction with the Tezos blockchain, showcasing: 
+ - how a user connects/disconnects a wallet
+ - how to retrieve and display the wallet address and balance
+ - how to send Tezos to another address
+ 
+ > The favicon and specific background colors are from the Tezos [Visual Identity](https://tezos.com/visual-identity/) guide.
 
 ## Getting Started
 

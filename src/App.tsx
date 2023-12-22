@@ -38,7 +38,7 @@ function App() {
   }, [walletAddress]);
 
   const handleWalletAction = () => {
-    setError(undefined); // Clear any existing error message
+    setError(undefined);
 
     void getAccountAddress().then((r) =>
       r
