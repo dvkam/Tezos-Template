@@ -50,3 +50,27 @@ export const balance = async () => {
     throw new Error("No active account found");
   }
 };
+
+export const sendTezos = async (receiverAddress: string, amount: number) => {
+  if (!receiverAddress || amount <= 0) {
+    throw new Error("Invalid parameters for sending Tezos");
+  }
+
+  const address = await getAccountAddress();
+  if (!address) {
+    throw new Error("No active account found");
+  }
+
+  try {
+    const operation = await tezos.wallet.transfer({
+      to: receiverAddress,
+      amount: amount
+    }).send();
+
+    await operation.confirmation();
+    return operation.opHash;
+  } catch (error) {
+    console.error("An error occurred while sending Tezos:", error);
+    throw error;
+  }
+};
