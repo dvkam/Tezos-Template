@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { getAccountAddress, switchAccount, unsync, balance, sendTezos } from "./Wallet";
+import {
+  getAccountAddress,
+  switchAccount,
+  unsync,
+  balance,
+  sendTezos,
+} from "./Wallet";
 
 function App() {
   const [walletAddress, setWalletAddress] = useState<string | undefined>(
@@ -10,7 +16,7 @@ function App() {
   const [balanceValue, setBalanceValue] = useState<number | undefined>(
     undefined
   );
-  const [receiver, setReceiver] = useState('');
+  const [receiver, setReceiver] = useState("");
   const [amountToSend, setAmountToSend] = useState(0);
 
   useEffect(() => {
@@ -146,30 +152,36 @@ function App() {
         )}
         {walletAddress && (
           <>
-        <div style={{ display: "flex", flexDirection: "column", border: '2px dashed black' }}>
-          <p style={{ fontWeight: "bold", textAlign: "center" }}>Send Tezos ꜩ</p>
-          <input
-            type="text"
-            value={receiver}
-            onChange={(e) => setReceiver(e.target.value)}
-            placeholder="Receiver Address"
-            style={{ margin: "5px", width: "250px", height: "30px" }}
-          />
-          <input
-            type="number"
-            value={amountToSend}
-            onChange={(e) => setAmountToSend(parseFloat(e.target.value))}
-            placeholder="Amount to Send ꜩ"
-            style={{ margin: "5px", width: "250px", height: "30px" }}
-          />
-        </div>
-        <button 
-          style={{ margin: "5px" }}
-          onClick={handleSendTezos}
-          >
-            Send Tezos</button>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                border: "2px dashed black",
+              }}
+            >
+              <p style={{ fontWeight: "bold", textAlign: "center" }}>
+                Send Tezos ꜩ
+              </p>
+              <input
+                type="text"
+                value={receiver}
+                onChange={(e) => setReceiver(e.target.value)}
+                placeholder="Receiver Address"
+                style={{ margin: "5px", width: "250px", height: "30px" }}
+              />
+              <input
+                type="number"
+                value={amountToSend}
+                onChange={(e) => setAmountToSend(parseFloat(e.target.value))}
+                placeholder="Amount to Send ꜩ"
+                style={{ margin: "5px", width: "250px", height: "30px" }}
+              />
+            </div>
+            <button style={{ margin: "5px" }} onClick={handleSendTezos}>
+              Send Tezos
+            </button>
           </>
-      )}
+        )}
       </div>
     </div>
   );

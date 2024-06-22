@@ -62,10 +62,12 @@ export const sendTezos = async (receiverAddress: string, amount: number) => {
   }
 
   try {
-    const operation = await tezos.wallet.transfer({
-      to: receiverAddress,
-      amount: amount
-    }).send();
+    const operation = await tezos.wallet
+      .transfer({
+        to: receiverAddress,
+        amount: amount,
+      })
+      .send();
 
     await operation.confirmation();
     return operation.opHash;
