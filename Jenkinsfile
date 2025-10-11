@@ -13,6 +13,7 @@ pipeline {
             steps {
                 echo 'Building...'
                 // Examples:
+                sh 'npm install'
                 sh 'npm run lint'
                 sh 'npm run build'
                 // sh 'mvn clean package'
