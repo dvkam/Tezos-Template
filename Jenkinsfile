@@ -1,5 +1,9 @@
 pipeline {
     agent any
+
+    tools {
+        nodejs 'NodeJs' 
+    }
     
     stages {
         stage('Checkout') {
@@ -12,7 +16,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building...'
-                // Examples:
+                sh 'node --version'
                 sh 'npm install'
                 sh 'npm run lint'
                 sh 'npm run build'
