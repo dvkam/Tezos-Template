@@ -41,7 +41,7 @@ pipeline {
                             export BASELINE_FILE=baseline-build-size.txt
                             export BRANCH_NAME=${BRANCH_NAME}
                             export CHANGE_ID=${CHANGE_ID}
-                            node scripts/build-size.js
+                            node scripts/build-size.cjs
                         ''',
                         returnStdout: true
                     ).trim()
