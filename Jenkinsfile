@@ -130,10 +130,6 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                // Examples:
-                // sh 'npm test'
-                // sh 'mvn test'
-                // sh 'pytest'
             }
         }
         
@@ -143,7 +139,6 @@ pipeline {
             }
             steps {
                 echo 'Deploying to production...'
-                // This only runs when merging to main
             }
         }
     }

@@ -1,7 +1,6 @@
-import { TezosToolkit } from "@taquito/taquito";
 import { BeaconWallet } from "@taquito/beacon-wallet";
-import { NetworkType } from "@airgap/beacon-dapp";
-
+import { TezosToolkit } from "@taquito/taquito";
+import { NetworkType, PermissionScope } from "@airgap/beacon-sdk";
 export const getNetworkType = () => {
   return NetworkType.GHOSTNET;
 };
@@ -11,34 +10,41 @@ export const getNetworkRPC = () => {
 };
 
 const tezos = new TezosToolkit(getNetworkRPC());
-const beaconWallet = new BeaconWallet({
+const wallet = new BeaconWallet({
   name: "Example",
   preferredNetwork: getNetworkType(),
 });
-tezos.setWalletProvider(beaconWallet);
+tezos.setWalletProvider(wallet);
 
-export const getAccountAddress = () =>
-  beaconWallet.client
-    .getActiveAccount()
-    .then((r) => (r ? r.address : undefined));
+export const getAccountAddress = async () => {
+  const activeAccount = await wallet.client.getActiveAccount();
+  return activeAccount?.address;
+};
 
 export const isAccountSynced = () => {
   void getAccountAddress().then((r) => r !== undefined);
 };
 
-export const unsync = () => beaconWallet.clearActiveAccount();
+export const unsync = () => wallet.clearActiveAccount();
 
-export const sync = () =>
-  beaconWallet.client
-    .requestPermissions({ network: { type: getNetworkType() } })
-    .then((permissions) => {
-      return permissions.address;
-    })
-    .catch((e) => {
-      void beaconWallet.clearActiveAccount();
-      console.error("An error occurred while requesting permissions:", e);
-      throw e;
+export const sync = async (): Promise<string> => {
+  try {
+    await wallet.requestPermissions({
+      scopes: [PermissionScope.OPERATION_REQUEST, PermissionScope.SIGN],
     });
+    const activeAccount = await wallet.client.getActiveAccount();
+    const address = activeAccount?.address;
+    if (!address) {
+      throw new Error("No address returned after requesting permissions");
+    }
+    return address;
+  } catch (e) {
+    console.error("An error occurred while requesting permissions:", e);
+    await wallet.clearActiveAccount();
+    if (e instanceof Error) throw e;
+    throw new Error(String(e));
+  }
+};
 
 export const switchAccount = () => sync();
 
