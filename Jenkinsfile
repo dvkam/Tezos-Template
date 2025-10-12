@@ -30,15 +30,20 @@ pipeline {
         }
 
         stage('Analyze Build Size') {
+            when {
+                changeRequest()
+            }
             steps {
                 script {
+                    echo '🔍 Analyzing build size for PR...'
+                    
                     // Run the build size analysis script
                     def output = sh(
                         script: '''
                             export BUILD_DIR=dist
-                            export BASELINE_FILE=baseline-build-size.txt
                             export BRANCH_NAME=${BRANCH_NAME}
                             export CHANGE_ID=${CHANGE_ID}
+                            export CHANGE_TARGET=${CHANGE_TARGET}
                             node scripts/build-size.cjs
                         ''',
                         returnStdout: true
@@ -56,41 +61,6 @@ pipeline {
                             env.BUILD_SIZE_DIFF = line.split('=')[1]
                         } else if (line.startsWith('BUILD_SIZE_DIFF_PERCENT=')) {
                             env.BUILD_SIZE_DIFF_PERCENT = line.split('=')[1]
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Commit Baseline to Git') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    // Check if baseline file was created
-                    if (fileExists('baseline-build-size.txt')) {
-                        // Configure git
-                        sh '''
-                            git config user.email "jenkins@ci.local"
-                            git config user.name "Jenkins CI"
-                        '''
-                        
-                        // Check if file changed
-                        def gitStatus = sh(script: 'git status --porcelain baseline-build-size.txt', returnStdout: true).trim()
-                        
-                        if (gitStatus) {
-                            // Commit and push the baseline
-                            withCredentials([usernamePassword(credentialsId: 'github-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                                sh '''
-                                    git add baseline-build-size.txt
-                                    git commit -m "[Jenkins] Update baseline build size"
-                                    git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${GIT_URL#https://github.com/} HEAD:main
-                                '''
-                            }
-                            echo '✅ Baseline committed to main branch'
-                        } else {
-                            echo 'ℹ️ Baseline unchanged, skipping commit'
                         }
                     }
                 }
