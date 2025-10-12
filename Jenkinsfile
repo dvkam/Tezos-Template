@@ -25,7 +25,7 @@ pipeline {
                 sh 'npm --version'
                 sh 'npm install'
                 sh 'npm run lint'
-               sh 'npm run build'
+                sh 'npm run build'
             }
         }
 
