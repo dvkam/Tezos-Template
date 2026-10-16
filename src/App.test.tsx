@@ -68,6 +68,8 @@ it('preserves failed transfer input and prevents duplicate submissions while con
   await user.click(screen.getByRole('button', { name: 'Send test XTZ' }));
   const pending = screen.getByRole('button', { name: 'Confirming transfer…' });
   expect(pending).toHaveProperty('disabled', true);
+  const status = screen.getByText('Waiting for wallet approval and network confirmation…');
+  expect(status.getAttribute('aria-live')).toBe('polite');
   expect(screen.getByRole('button', { name: 'Disconnect' })).toHaveProperty('disabled', true);
   await user.click(pending);
   expect(wallet.sendTezos).toHaveBeenCalledTimes(2);

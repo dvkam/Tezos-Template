@@ -134,7 +134,9 @@ function App() {
           </button>
         )}
       </form>
-      {walletPending && <output>Waiting for wallet…</output>}
+      <output aria-live="polite" aria-atomic="true">
+        {walletPending ? 'Waiting for wallet…' : ''}
+      </output>
       {(restoreError || walletError) && <p role="alert">{restoreError || walletError}</p>}
       {address && (
         <section aria-labelledby="account-heading">
@@ -187,9 +189,13 @@ function App() {
             {!transferPending && transferResult.address === address && transferResult.error && (
               <p role="alert">{transferResult.error}</p>
             )}
-            {!transferPending && transferResult.address === address && transferResult.operation && (
-              <output className="operation">Confirmed operation: {transferResult.operation}</output>
-            )}
+            <output className="operation" aria-live="polite" aria-atomic="true">
+              {transferPending
+                ? 'Waiting for wallet approval and network confirmation…'
+                : transferResult.address === address && transferResult.operation
+                  ? `Confirmed operation: ${transferResult.operation}`
+                  : ''}
+            </output>
           </form>
         </section>
       )}
