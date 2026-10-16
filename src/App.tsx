@@ -1,22 +1,12 @@
-import { useEffect, useState } from "react";
-import {
-  getAccountAddress,
-  switchAccount,
-  unsync,
-  balance,
-  sendTezos,
-} from "./Wallet";
+import { useEffect, useState } from 'react';
+import { getAccountAddress, switchAccount, unsync, balance, sendTezos } from './Wallet';
 
 function App() {
-  const [walletAddress, setWalletAddress] = useState<string | undefined>(
-    undefined
-  );
+  const [walletAddress, setWalletAddress] = useState<string | undefined>(undefined);
   const [, setError] = useState<string | undefined>(undefined);
 
-  const [balanceValue, setBalanceValue] = useState<number | undefined>(
-    undefined
-  );
-  const [receiver, setReceiver] = useState("");
+  const [balanceValue, setBalanceValue] = useState<number | undefined>(undefined);
+  const [receiver, setReceiver] = useState('');
   const [amountToSend, setAmountToSend] = useState(0);
 
   useEffect(() => {
@@ -34,9 +24,7 @@ function App() {
         }
       } catch (error) {
         console.log(error);
-        setError(
-          "An error occurred while fetching the balance. Please try again."
-        );
+        setError('An error occurred while fetching the balance. Please try again.');
       }
     };
 
@@ -52,11 +40,9 @@ function App() {
         : switchAccount()
             .then((address) => setWalletAddress(address))
             .catch(() => {
-              alert(
-                "An error occurred while switching accounts. Please try again."
-              );
+              alert('An error occurred while switching accounts. Please try again.');
               setWalletAddress(undefined);
-            })
+            }),
     );
   };
 
@@ -68,7 +54,7 @@ function App() {
         setWalletAddress(address);
       })
       .catch(() => {
-        alert("An error occurred while switching accounts. Please try again.");
+        alert('An error occurred while switching accounts. Please try again.');
         setWalletAddress(undefined);
       });
   };
@@ -80,45 +66,41 @@ function App() {
       })
       .catch((error) => {
         console.error(error);
-        setError("Transaction failed. Please try again.");
+        setError('Transaction failed. Please try again.');
       });
   };
 
   const getShorterAccount = (address: string) => {
     const lastIndex = address.length;
-    return (
-      address.substring(0, 5) +
-      "..." +
-      address.substring(lastIndex - 5, lastIndex)
-    );
+    return address.substring(0, 5) + '...' + address.substring(lastIndex - 5, lastIndex);
   };
 
   return (
     <div
       style={{
-        width: "100vw",
+        width: '100vw',
       }}
     >
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
         }}
       >
         <button
           style={{
-            margin: "5px",
+            margin: '5px',
           }}
           onClick={handleWalletAction}
         >
-          {walletAddress ? "Unsync" : "Sync"}
+          {walletAddress ? 'Unsync' : 'Sync'}
         </button>
         {walletAddress && (
           <button
             style={{
-              margin: "5px",
+              margin: '5px',
             }}
             onClick={handleSwitchAccount}
           >
@@ -127,24 +109,22 @@ function App() {
         )}
         {walletAddress && (
           <>
-            <p style={{ fontWeight: "normal" }}>Full Wallet Address: </p>
-            <span style={{ fontWeight: "normal" }}>{walletAddress}</span>
+            <p style={{ fontWeight: 'normal' }}>Full Wallet Address: </p>
+            <span style={{ fontWeight: 'normal' }}>{walletAddress}</span>
           </>
         )}
         {walletAddress && (
           <>
-            <p style={{ fontWeight: "bold" }}>
-              In case you don't want to display the whole address:{" "}
+            <p style={{ fontWeight: 'bold' }}>
+              In case you don't want to display the whole address:{' '}
             </p>
-            <span style={{ fontWeight: "bold" }}>
-              {getShorterAccount(walletAddress)}
-            </span>
+            <span style={{ fontWeight: 'bold' }}>{getShorterAccount(walletAddress)}</span>
           </>
         )}
         {walletAddress && (
           <>
             {balanceValue !== undefined ? (
-              <p style={{ fontWeight: "bold" }}>Balance: {balanceValue} ꜩ</p>
+              <p style={{ fontWeight: 'bold' }}>Balance: {balanceValue} ꜩ</p>
             ) : (
               <p>Loading balance...</p>
             )}
@@ -154,30 +134,28 @@ function App() {
           <>
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                border: "2px dashed black",
+                display: 'flex',
+                flexDirection: 'column',
+                border: '2px dashed black',
               }}
             >
-              <p style={{ fontWeight: "bold", textAlign: "center" }}>
-                Send Tezos ꜩ
-              </p>
+              <p style={{ fontWeight: 'bold', textAlign: 'center' }}>Send Tezos ꜩ</p>
               <input
                 type="text"
                 value={receiver}
                 onChange={(e) => setReceiver(e.target.value)}
                 placeholder="Receiver Address"
-                style={{ margin: "5px", width: "250px", height: "30px" }}
+                style={{ margin: '5px', width: '250px', height: '30px' }}
               />
               <input
                 type="number"
                 value={amountToSend}
                 onChange={(e) => setAmountToSend(parseFloat(e.target.value))}
                 placeholder="Amount to Send ꜩ"
-                style={{ margin: "5px", width: "250px", height: "30px" }}
+                style={{ margin: '5px', width: '250px', height: '30px' }}
               />
             </div>
-            <button style={{ margin: "5px" }} onClick={handleSendTezos}>
+            <button style={{ margin: '5px' }} onClick={handleSendTezos}>
               Send Tezos
             </button>
           </>

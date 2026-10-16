@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const { execSync } = require('child_process');
 
 // Configuration
@@ -46,7 +45,7 @@ function main() {
   if (IS_MAIN) {
     fs.writeFileSync(BASELINE_FILE, currentSize.toString(), 'utf8');
     console.log(`✅ Baseline build size updated: ${formatBytes(currentSize)}\n`);
-    
+
     // Output for Jenkins environment variables
     console.log(`BUILD_SIZE=${currentSize}`);
     process.exit(0);
@@ -64,9 +63,9 @@ function main() {
     const diff = currentSize - baselineSize;
     const diffPercent = baselineSize > 0 ? ((diff / baselineSize) * 100).toFixed(2) : 0;
 
-    const emoji = diff > 0 ? '📈' : (diff < 0 ? '📉' : '➡️');
+    const emoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
     const sign = diff > 0 ? '+' : '';
-    const status = diff > 0 ? '⚠️  Increased' : (diff < 0 ? '✅ Decreased' : '➡️ No change');
+    const status = diff > 0 ? '⚠️  Increased' : diff < 0 ? '✅ Decreased' : '➡️ No change';
 
     // Print comparison table
     console.log('\n════════════════════════════════════════════');
@@ -104,7 +103,7 @@ function main() {
 | **Difference** | ${sign}${formatBytes(diff)} (${sign}${diffPercent}%) |
 | **Status** | ${status} |
 `;
-      
+
       // Write comment to file for Jenkins to post
       fs.writeFileSync('build-size-comment.md', comment, 'utf8');
       console.log('📝 GitHub comment generated: build-size-comment.md\n');

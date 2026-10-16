@@ -6,7 +6,7 @@
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
 
-  background: linear-gradient(-45deg, rgba(15,97,255,1) 0%, rgba(159,50,159,1) 100%);
+  background: linear-gradient(-45deg, rgba(15, 97, 255, 1) 0%, rgba(159, 50, 159, 1) 100%);
   background-size: 400% 400%;
 
   animation: AnimationName 30s ease infinite;
@@ -19,9 +19,15 @@
 }
 
 @keyframes AnimationName {
-  0%{background-position:50% 0%}
-  50%{background-position:51% 100%}
-  100%{background-position:50% 0%}
+  0% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 51% 100%;
+  }
+  100% {
+    background-position: 50% 0%;
+  }
 }
 
 a:hover {
