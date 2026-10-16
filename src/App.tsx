@@ -1,167 +1,199 @@
-import { useEffect, useState } from 'react';
-import { getAccountAddress, switchAccount, unsync, balance, sendTezos } from './Wallet';
+import { useActionState, useEffect, useState } from 'react';
+import {
+  connectWallet,
+  disconnectWallet,
+  getAccountAddress,
+  getBalance,
+  sendTezos,
+} from './Wallet';
+
+type BalanceResult = { address: string; revision: number; value?: string; error?: string };
+type TransferResult = {
+  error: string | null;
+  operation: string | null;
+  address: string | undefined;
+};
+const initialTransfer: TransferResult = { error: null, operation: null, address: undefined };
+const errorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : 'The wallet request failed. Please try again.';
 
 function App() {
-  const [walletAddress, setWalletAddress] = useState<string | undefined>(undefined);
-  const [, setError] = useState<string | undefined>(undefined);
-
-  const [balanceValue, setBalanceValue] = useState<number | undefined>(undefined);
+  const [address, setAddress] = useState<string>();
+  const [restoring, setRestoring] = useState(true);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [balanceRevision, setBalanceRevision] = useState(0);
+  const [balanceResult, setBalanceResult] = useState<BalanceResult>();
   const [receiver, setReceiver] = useState('');
-  const [amountToSend, setAmountToSend] = useState(0);
+  const [amount, setAmount] = useState('');
 
   useEffect(() => {
-    void getAccountAddress().then((address) => setWalletAddress(address));
+    let active = true;
+    void getAccountAddress().then(
+      (value) => {
+        if (active) {
+          setAddress(value);
+          setRestoring(false);
+        }
+      },
+      (error: unknown) => {
+        if (active) {
+          setRestoreError(errorMessage(error));
+          setRestoring(false);
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        if (walletAddress) {
-          const balanceResult = await balance();
-          setBalanceValue(balanceResult.toNumber() / 1000000);
-        } else {
-          setBalanceValue(undefined);
-        }
-      } catch (error) {
-        console.log(error);
-        setError('An error occurred while fetching the balance. Please try again.');
-      }
-    };
-
-    void fetchBalance();
-  }, [walletAddress]);
-
-  const handleWalletAction = () => {
-    setError(undefined);
-
-    void getAccountAddress().then((r) =>
-      r
-        ? unsync().then(() => setWalletAddress(undefined))
-        : switchAccount()
-            .then((address) => setWalletAddress(address))
-            .catch(() => {
-              alert('An error occurred while switching accounts. Please try again.');
-              setWalletAddress(undefined);
-            }),
+    if (!address) return;
+    let active = true;
+    void getBalance(address).then(
+      (value) => {
+        if (active) setBalanceResult({ address, revision: balanceRevision, value });
+      },
+      (error: unknown) => {
+        if (active)
+          setBalanceResult({ address, revision: balanceRevision, error: errorMessage(error) });
+      },
     );
-  };
+    return () => {
+      active = false;
+    };
+  }, [address, balanceRevision]);
 
-  const handleSwitchAccount = (): void => {
-    setError(undefined);
+  const [walletError, walletAction, walletPending] = useActionState(
+    async (_previous: string | null, data: FormData): Promise<string | null> => {
+      setRestoreError(null);
+      try {
+        if (data.get('intent') === 'disconnect') {
+          await disconnectWallet();
+          setAddress(undefined);
+        } else {
+          setAddress(await connectWallet());
+          setBalanceRevision((value) => value + 1);
+        }
+        setReceiver('');
+        setAmount('');
+        return null;
+      } catch (error) {
+        return errorMessage(error);
+      }
+    },
+    null,
+  );
 
-    switchAccount()
-      .then((address) => {
-        setWalletAddress(address);
-      })
-      .catch(() => {
-        alert('An error occurred while switching accounts. Please try again.');
-        setWalletAddress(undefined);
-      });
-  };
+  const [transferResult, transferAction, transferPending] = useActionState(
+    async (_previous: TransferResult, data: FormData): Promise<TransferResult> => {
+      try {
+        const receiverValue = data.get('receiver');
+        const amountValue = data.get('amount');
+        const operation = await sendTezos(
+          typeof receiverValue === 'string' ? receiverValue : '',
+          typeof amountValue === 'string' ? amountValue : '',
+        );
+        setBalanceRevision((value) => value + 1);
+        setReceiver('');
+        setAmount('');
+        return { error: null, operation, address };
+      } catch (error) {
+        return { error: errorMessage(error), operation: null, address };
+      }
+    },
+    initialTransfer,
+  );
 
-  const handleSendTezos = (): void => {
-    sendTezos(receiver, amountToSend)
-      .then((opHash) => {
-        alert(`Transaction successful with operation hash: ${opHash}`);
-      })
-      .catch((error) => {
-        console.error(error);
-        setError('Transaction failed. Please try again.');
-      });
-  };
-
-  const getShorterAccount = (address: string) => {
-    const lastIndex = address.length;
-    return address.substring(0, 5) + '...' + address.substring(lastIndex - 5, lastIndex);
-  };
+  const busy = restoring || walletPending || transferPending;
+  const currentBalance =
+    balanceResult && balanceResult.address === address && balanceResult.revision === balanceRevision
+      ? balanceResult
+      : undefined;
 
   return (
-    <div
-      style={{
-        width: '100vw',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-        }}
-      >
-        <button
-          style={{
-            margin: '5px',
-          }}
-          onClick={handleWalletAction}
-        >
-          {walletAddress ? 'Unsync' : 'Sync'}
-        </button>
-        {walletAddress && (
-          <button
-            style={{
-              margin: '5px',
-            }}
-            onClick={handleSwitchAccount}
-          >
-            Switch Account
-          </button>
-        )}
-        {walletAddress && (
+    <main className="wallet-app">
+      <header>
+        <p className="network">Ghostnet test network</p>
+        <h1>Tezos wallet template</h1>
+        <p>Connect a wallet, check its balance, and send test XTZ.</p>
+      </header>
+      <form action={walletAction} className="wallet-controls" aria-label="Wallet connection">
+        {address ? (
           <>
-            <p style={{ fontWeight: 'normal' }}>Full Wallet Address: </p>
-            <span style={{ fontWeight: 'normal' }}>{walletAddress}</span>
-          </>
-        )}
-        {walletAddress && (
-          <>
-            <p style={{ fontWeight: 'bold' }}>
-              In case you don't want to display the whole address:{' '}
-            </p>
-            <span style={{ fontWeight: 'bold' }}>{getShorterAccount(walletAddress)}</span>
-          </>
-        )}
-        {walletAddress && (
-          <>
-            {balanceValue !== undefined ? (
-              <p style={{ fontWeight: 'bold' }}>Balance: {balanceValue} ꜩ</p>
-            ) : (
-              <p>Loading balance...</p>
-            )}
-          </>
-        )}
-        {walletAddress && (
-          <>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                border: '2px dashed black',
-              }}
-            >
-              <p style={{ fontWeight: 'bold', textAlign: 'center' }}>Send Tezos ꜩ</p>
-              <input
-                type="text"
-                value={receiver}
-                onChange={(e) => setReceiver(e.target.value)}
-                placeholder="Receiver Address"
-                style={{ margin: '5px', width: '250px', height: '30px' }}
-              />
-              <input
-                type="number"
-                value={amountToSend}
-                onChange={(e) => setAmountToSend(parseFloat(e.target.value))}
-                placeholder="Amount to Send ꜩ"
-                style={{ margin: '5px', width: '250px', height: '30px' }}
-              />
-            </div>
-            <button style={{ margin: '5px' }} onClick={handleSendTezos}>
-              Send Tezos
+            <button name="intent" value="disconnect" disabled={busy}>
+              Disconnect
+            </button>
+            <button name="intent" value="connect" disabled={busy}>
+              Switch account
             </button>
           </>
+        ) : (
+          <button name="intent" value="connect" disabled={busy}>
+            {restoring ? 'Restoring wallet…' : walletPending ? 'Connecting…' : 'Connect wallet'}
+          </button>
         )}
-      </div>
-    </div>
+      </form>
+      {walletPending && <output>Waiting for wallet…</output>}
+      {(restoreError || walletError) && <p role="alert">{restoreError || walletError}</p>}
+      {address && (
+        <section aria-labelledby="account-heading">
+          <h2 id="account-heading">Your account</h2>
+          <p className="address">{address}</p>
+          <p aria-label="Short address">
+            {address.slice(0, 5)}…{address.slice(-5)}
+          </p>
+          {currentBalance?.error ? (
+            <p role="alert">{currentBalance.error}</p>
+          ) : (
+            <output>
+              {currentBalance?.value === undefined
+                ? 'Loading balance…'
+                : `Balance: ${currentBalance.value} ꜩ`}
+            </output>
+          )}
+          <form action={transferAction} aria-labelledby="send-heading">
+            <h2 id="send-heading">Send test XTZ</h2>
+            <label htmlFor="receiver">Receiver address</label>
+            <input
+              id="receiver"
+              name="receiver"
+              value={receiver}
+              onChange={(event) => setReceiver(event.target.value)}
+              required
+              disabled={busy}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <label htmlFor="amount">Amount in XTZ</label>
+            <input
+              id="amount"
+              name="amount"
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              required
+              disabled={busy}
+              autoComplete="off"
+              aria-describedby="amount-help"
+            />
+            <p id="amount-help" className="hint">
+              Use a positive amount with up to six decimal places.
+            </p>
+            <button type="submit" disabled={busy}>
+              {transferPending ? 'Confirming transfer…' : 'Send test XTZ'}
+            </button>
+            {!transferPending && transferResult.address === address && transferResult.error && (
+              <p role="alert">{transferResult.error}</p>
+            )}
+            {!transferPending && transferResult.address === address && transferResult.operation && (
+              <output className="operation">Confirmed operation: {transferResult.operation}</output>
+            )}
+          </form>
+        </section>
+      )}
+    </main>
   );
 }
 

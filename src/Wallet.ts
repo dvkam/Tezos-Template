@@ -1,84 +1,40 @@
 import { BeaconWallet } from '@taquito/beacon-wallet';
 import { TezosToolkit } from '@taquito/taquito';
 import { NetworkType, PermissionScope } from '@airgap/beacon-sdk';
-export const getNetworkType = () => {
-  return NetworkType.GHOSTNET;
-};
+import { parseTransfer } from './transfer';
 
-export const getNetworkRPC = () => {
-  return 'https://ghostnet.ecadinfra.com';
-};
-
-const tezos = new TezosToolkit(getNetworkRPC());
-const wallet = new BeaconWallet({
-  name: 'Example',
-  preferredNetwork: getNetworkType(),
-});
+const rpcUrl = 'https://ghostnet.ecadinfra.com';
+const tezos = new TezosToolkit(rpcUrl);
+const wallet = new BeaconWallet({ name: 'Tezos Template', preferredNetwork: NetworkType.GHOSTNET });
 tezos.setWalletProvider(wallet);
 
-export const getAccountAddress = async () => {
-  const activeAccount = await wallet.client.getActiveAccount();
-  return activeAccount?.address;
-};
-
-export const isAccountSynced = () => {
-  void getAccountAddress().then((r) => r !== undefined);
-};
-
-export const unsync = () => wallet.clearActiveAccount();
-
-export const sync = async (): Promise<string> => {
-  try {
-    await wallet.requestPermissions({
-      scopes: [PermissionScope.OPERATION_REQUEST, PermissionScope.SIGN],
-    });
-    const activeAccount = await wallet.client.getActiveAccount();
-    const address = activeAccount?.address;
-    if (!address) {
-      throw new Error('No address returned after requesting permissions');
-    }
-    return address;
-  } catch (e) {
-    console.error('An error occurred while requesting permissions:', e);
-    await wallet.clearActiveAccount();
-    if (e instanceof Error) throw e;
-    throw new Error(String(e));
+export async function getAccountAddress() {
+  const account = await wallet.client.getActiveAccount();
+  if (account && account.network.type !== NetworkType.GHOSTNET) {
+    throw new Error('Select a Ghostnet wallet account to use this test-network template.');
   }
-};
+  return account?.address;
+}
 
-export const switchAccount = () => sync();
-
-export const balance = async () => {
+export async function connectWallet() {
+  await wallet.requestPermissions({
+    scopes: [PermissionScope.OPERATION_REQUEST],
+  });
   const address = await getAccountAddress();
-  if (address) {
-    return tezos.tz.getBalance(address);
-  } else {
-    throw new Error('No active account found');
-  }
-};
+  if (!address) throw new Error('The wallet did not return an account address.');
+  return address;
+}
 
-export const sendTezos = async (receiverAddress: string, amount: number) => {
-  if (!receiverAddress || amount <= 0) {
-    throw new Error('Invalid parameters for sending Tezos');
-  }
+export const disconnectWallet = () => wallet.clearActiveAccount();
 
-  const address = await getAccountAddress();
-  if (!address) {
-    throw new Error('No active account found');
-  }
+export async function getBalance(address: string) {
+  return (await tezos.tz.getBalance(address)).dividedBy(1_000_000).toFixed();
+}
 
-  try {
-    const operation = await tezos.wallet
-      .transfer({
-        to: receiverAddress,
-        amount: amount,
-      })
-      .send();
-
-    await operation.confirmation();
-    return operation.opHash;
-  } catch (error) {
-    console.error('An error occurred while sending Tezos:', error);
-    throw error;
-  }
-};
+export async function sendTezos(receiver: string, amount: string) {
+  const transfer = parseTransfer(receiver, amount);
+  if (!(await getAccountAddress())) throw new Error('Connect a wallet before sending test XTZ.');
+  const operation = await tezos.wallet.transfer(transfer).send();
+  await operation.confirmation();
+  return operation.opHash;
+}
