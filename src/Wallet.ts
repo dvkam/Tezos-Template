@@ -36,5 +36,8 @@ export async function sendTezos(receiver: string, amount: string) {
   if (!(await getAccountAddress())) throw new Error('Connect a wallet before sending test XTZ.');
   const operation = await tezos.wallet.transfer(transfer).send();
   await operation.confirmation();
+  const status = await operation.status();
+  if (status !== 'applied')
+    throw new Error(`The transaction was included but execution ${status}.`);
   return operation.opHash;
 }

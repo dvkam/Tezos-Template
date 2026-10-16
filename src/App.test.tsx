@@ -41,14 +41,20 @@ it('shows a rejected wallet connection and permits retry', async () => {
 it('preserves failed transfer input and prevents duplicate submissions while confirming', async () => {
   const user = userEvent.setup();
   wallet.getAccountAddress.mockResolvedValue(address);
-  wallet.sendTezos.mockRejectedValueOnce(new Error('Transfer rejected'));
+  wallet.sendTezos.mockRejectedValueOnce(
+    new Error('The transaction was included but execution failed.'),
+  );
   render(<App />);
   const receiver = await screen.findByLabelText('Receiver address');
   const amount = screen.getByLabelText('Amount in XTZ');
   await user.type(receiver, address);
   await user.type(amount, '0.000001');
   await user.click(screen.getByRole('button', { name: 'Send test XTZ' }));
-  expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Transfer rejected');
+  expect(await screen.findByRole('alert')).toHaveProperty(
+    'textContent',
+    'The transaction was included but execution failed.',
+  );
+  expect(screen.queryByText(/Confirmed operation/)).toBeNull();
   expect(receiver).toHaveProperty('value', address);
   expect(amount).toHaveProperty('value', '0.000001');
 
