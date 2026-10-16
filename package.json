@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "pnpm run typecheck && vite build",
+    "build": "pnpm run check && pnpm test && vite build",
     "lint": "oxlint --type-aware --deny-warnings",
     "preview": "vite preview",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck"
   },
   "dependencies": {
     "@airgap/beacon-sdk": "^4.6.1",
