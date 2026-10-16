@@ -22,10 +22,10 @@ pipeline {
             steps {
                 echo 'Building...'
                 sh 'node --version'
-                sh 'npm --version'
-                sh 'npm install'
-                sh 'npm run lint'
-                sh 'npm run build'
+                sh 'pnpm --version'
+                sh 'pnpm install --frozen-lockfile'
+                sh 'pnpm run lint'
+                sh 'pnpm run build'
             }
         }
 

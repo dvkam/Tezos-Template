@@ -9,7 +9,7 @@ This is a simple dApp template that demonstrates the integration and interaction
 
 ## Getting Started
 
-1. Make sure you have https://nodejs.org/ installed on your computer
+1. Use Node 24 (`nvm use`) and enable Corepack (`corepack enable`). The project pins pnpm 12.14.0.
 2. Create a new repository by clicking "Use this template".
 3. Clone your new repository:
 
@@ -18,11 +18,11 @@ This is a simple dApp template that demonstrates the integration and interaction
 4. Change your current working directory to the newly cloned repository directory.
 5. Install dependencies:
 
-   `npm install`
+   `pnpm install --frozen-lockfile`
 
 6. Start development server:
 
-   `npm run dev`
+   `pnpm run dev`
 
 7. Open http://localhost:5173/ in your browser to see a sample application.
 
@@ -30,11 +30,11 @@ This is a simple dApp template that demonstrates the integration and interaction
 
 1. Run the command:
 
-   `npm run build`
+   `pnpm run build`
 
 2. After you have build the app you can run it locally:
 
-   `npm run preview`
+   `pnpm run preview`
 
 3. Open http://localhost:4173/ in your browser to see the production build.
 
