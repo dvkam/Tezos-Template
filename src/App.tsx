@@ -1,11 +1,5 @@
 import { useActionState, useEffect, useState } from 'react';
-import {
-  connectWallet,
-  disconnectWallet,
-  getAccountAddress,
-  getBalance,
-  sendTezos,
-} from './Wallet';
+import { connectWallet, disconnectWallet, subscribeAccount, getBalance, sendTezos } from './Wallet';
 
 type BalanceResult = { address: string; revision: number; value?: string; error?: string };
 type TransferResult = {
@@ -26,26 +20,18 @@ function App() {
   const [receiver, setReceiver] = useState('');
   const [amount, setAmount] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    void getAccountAddress().then(
-      (value) => {
-        if (active) {
-          setAddress(value);
-          setRestoring(false);
-        }
-      },
-      (error: unknown) => {
-        if (active) {
-          setRestoreError(errorMessage(error));
-          setRestoring(false);
-        }
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, []);
+  useEffect(
+    () =>
+      subscribeAccount((value, error) => {
+        setAddress(value);
+        setRestoreError(error === undefined ? null : errorMessage(error));
+        setRestoring(false);
+        setBalanceRevision((revision) => revision + 1);
+        setReceiver('');
+        setAmount('');
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!address) return;
@@ -88,11 +74,13 @@ function App() {
   const [transferResult, transferAction, transferPending] = useActionState(
     async (_previous: TransferResult, data: FormData): Promise<TransferResult> => {
       try {
+        if (!address) throw new Error('Connect a wallet before sending test XTZ.');
         const receiverValue = data.get('receiver');
         const amountValue = data.get('amount');
         const operation = await sendTezos(
           typeof receiverValue === 'string' ? receiverValue : '',
           typeof amountValue === 'string' ? amountValue : '',
+          address,
         );
         setBalanceRevision((value) => value + 1);
         setReceiver('');

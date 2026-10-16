@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event';
 import App from './App';
 
 const wallet = vi.hoisted(() => ({
+  subscribeAccount:
+    vi.fn<(observer: (address: string | undefined, error: unknown) => void) => () => void>(),
   getAccountAddress: vi.fn<() => Promise<string | undefined>>(),
   connectWallet: vi.fn<() => Promise<string>>(),
   disconnectWallet: vi.fn<() => Promise<void>>(),
   getBalance: vi.fn<(address: string) => Promise<string>>(),
-  sendTezos: vi.fn<(receiver: string, amount: string) => Promise<string>>(),
+  sendTezos: vi.fn<(receiver: string, amount: string, sender: string) => Promise<string>>(),
 }));
 vi.mock('./Wallet', () => wallet);
 const address = 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb';
@@ -16,6 +18,15 @@ const address = 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb';
 beforeEach(() => {
   vi.resetAllMocks();
   wallet.getAccountAddress.mockResolvedValue(undefined);
+  wallet.subscribeAccount.mockImplementation((observer) => {
+    let active = true;
+    void wallet.getAccountAddress().then((value) => {
+      if (active) observer(value, undefined);
+    });
+    return () => {
+      active = false;
+    };
+  });
   wallet.connectWallet.mockResolvedValue(address);
   wallet.getBalance.mockResolvedValue('1.234567');
   wallet.disconnectWallet.mockResolvedValue(undefined);
@@ -97,4 +108,38 @@ it('does not display a stale balance after disconnecting', async () => {
     resolveBalance('999');
   });
   expect(screen.queryByText('Balance: 999 ꜩ')).toBeNull();
+});
+
+it('updates external account changes and ignores the old account balance', async () => {
+  const second = 'tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6';
+  wallet.getAccountAddress.mockResolvedValue(address);
+  let resolveBalance!: (value: string) => void;
+  wallet.getBalance.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveBalance = resolve;
+      }),
+  );
+  render(<App />);
+  const receiver = await screen.findByLabelText('Receiver address');
+  const user = userEvent.setup();
+  await user.type(receiver, address);
+  const observer = wallet.subscribeAccount.mock.calls[0]?.[0];
+  if (!observer) throw new Error('Missing account observer');
+  await act(async () => {
+    observer(second, undefined);
+  });
+  expect(await screen.findByText(second)).toBeTruthy();
+  expect(receiver).toHaveProperty('value', '');
+  expect(await screen.findByText('Balance: 1.234567 ꜩ')).toBeTruthy();
+  await act(async () => {
+    resolveBalance('999');
+  });
+  expect(screen.queryByText('Balance: 999 ꜩ')).toBeNull();
+  expect(screen.getByText('Balance: 1.234567 ꜩ')).toBeTruthy();
+  await act(async () => {
+    observer(undefined, undefined);
+  });
+  expect(screen.queryByLabelText('Receiver address')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Connect wallet' })).toBeTruthy();
 });
