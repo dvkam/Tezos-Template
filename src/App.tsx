@@ -73,15 +73,15 @@ function App() {
 
   const [transferResult, transferAction, transferPending] = useActionState(
     async (_previous: TransferResult, data: FormData): Promise<TransferResult> => {
+      if (!address) {
+        return { error: 'Connect a wallet before sending test XTZ.', operation: null, address };
+      }
+      const receiverValue = data.get('receiver');
+      const amountValue = data.get('amount');
+      const receiverText = typeof receiverValue === 'string' ? receiverValue : '';
+      const amountText = typeof amountValue === 'string' ? amountValue : '';
       try {
-        if (!address) throw new Error('Connect a wallet before sending test XTZ.');
-        const receiverValue = data.get('receiver');
-        const amountValue = data.get('amount');
-        const operation = await sendTezos(
-          typeof receiverValue === 'string' ? receiverValue : '',
-          typeof amountValue === 'string' ? amountValue : '',
-          address,
-        );
+        const operation = await sendTezos(receiverText, amountText, address);
         setBalanceRevision((value) => value + 1);
         setReceiver('');
         setAmount('');
