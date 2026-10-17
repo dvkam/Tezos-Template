@@ -15,6 +15,9 @@ pnpm run dev
 ```
 
 Open the URL Vite prints. The app uses the Ghostnet RPC at `https://ghostnet.ecadinfra.com`.
+Taquito 25 uses its maintained Beacon fork. Beacon enums and types come from
+`@taquito/beacon-wallet/types`, so the app needs no separate Beacon SDK dependency.
+Disconnect ends the wallet session through the reconnectable `wallet.disconnect()` API.
 It rejects active accounts from another network. Use a funded Ghostnet wallet for manual
 connection and transfer checks; automated tests mock wallet calls and never transfer funds.
 
@@ -37,8 +40,8 @@ the balance. Wallet controls are disabled while a transfer is confirming.
 
 Shared `tsconfig.base.json` enables strictest-style checks for browser and tooling code.
 `pnpm-workspace.yaml` enables automatic dependency deduplication and records resolution
-settings for reproducible frozen installs. Taquito's Angular-only installation patch is
-explicitly disabled because this template uses React.
+settings for reproducible frozen installs. Taquito 25 no longer needs the former
+Angular-only installation-script exception.
 
 ## Continuous integration
 

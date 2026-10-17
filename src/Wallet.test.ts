@@ -1,26 +1,30 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { connectWallet, getAccountAddress, sendTezos, subscribeAccount } from './Wallet';
+import {
+  connectWallet,
+  disconnectWallet,
+  getAccountAddress,
+  sendTezos,
+  subscribeAccount,
+} from './Wallet';
 
 const mocks = vi.hoisted(() => ({
   account: vi.fn(),
   subscribe: vi.fn(),
   permissions: vi.fn(),
   clear: vi.fn(),
+  disconnect: vi.fn(),
   transfer: vi.fn(),
   send: vi.fn(),
   confirm: vi.fn(),
   status: vi.fn(),
 }));
-vi.mock('@airgap/beacon-sdk', () => ({
-  NetworkType: { GHOSTNET: 'ghostnet' },
-  BeaconEvent: { ACTIVE_ACCOUNT_SET: 'ACTIVE_ACCOUNT_SET' },
-  PermissionScope: { OPERATION_REQUEST: 'operation_request' },
-}));
 vi.mock('@taquito/beacon-wallet', () => ({
+  BeaconEvent: { ACTIVE_ACCOUNT_SET: 'ACTIVE_ACCOUNT_SET' },
   BeaconWallet: class {
     client = { getActiveAccount: mocks.account, subscribeToEvent: mocks.subscribe };
     requestPermissions = mocks.permissions;
     clearActiveAccount = mocks.clear;
+    disconnect = mocks.disconnect;
   },
 }));
 vi.mock('@taquito/taquito', () => ({
@@ -35,6 +39,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mocks.account.mockResolvedValue({ address, network: { type: 'ghostnet' } });
   mocks.permissions.mockResolvedValue(undefined);
+  mocks.disconnect.mockResolvedValue(undefined);
   mocks.subscribe.mockResolvedValue(undefined);
   mocks.transfer.mockReturnValue({ send: mocks.send });
   mocks.send.mockResolvedValue({
@@ -116,4 +121,11 @@ it('observes account changes, validates their network, and cleans up without dup
   await vi.waitFor(() => expect(next).toHaveBeenCalledWith(address, undefined));
   expect(mocks.subscribe).toHaveBeenCalledOnce();
   stopNext();
+});
+
+it('ends the wallet session through the reconnectable disconnect API', async () => {
+  await disconnectWallet();
+  expect(mocks.disconnect).toHaveBeenCalledOnce();
+  expect(mocks.clear).not.toHaveBeenCalled();
+  await expect(connectWallet()).resolves.toBe(address);
 });
