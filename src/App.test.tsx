@@ -7,7 +7,7 @@ const wallet = vi.hoisted(() => ({
   subscribeAccount:
     vi.fn<(observer: (address: string | undefined, error: unknown) => void) => () => void>(),
   getAccountAddress: vi.fn<() => Promise<string | undefined>>(),
-  connectWallet: vi.fn<() => Promise<string>>(),
+  connectWallet: vi.fn<() => Promise<string | null>>(),
   disconnectWallet: vi.fn<() => Promise<void>>(),
   getBalance: vi.fn<(address: string) => Promise<string>>(),
   sendTezos: vi.fn<(receiver: string, amount: string, sender: string) => Promise<string>>(),
@@ -219,4 +219,29 @@ it('retries a failed balance read without reconnecting the wallet', async () => 
   expect(screen.queryByText('Balance request failed')).toBeNull();
   expect(wallet.getBalance).toHaveBeenCalledTimes(2);
   expect(wallet.connectWallet).not.toHaveBeenCalled();
+});
+
+it('keeps the current account and input when account selection is cancelled', async () => {
+  wallet.getAccountAddress.mockResolvedValue(address);
+  wallet.connectWallet.mockResolvedValue(null);
+  render(<App />);
+  const user = userEvent.setup();
+  await user.type(await screen.findByLabelText('Receiver address'), address);
+  await user.type(screen.getByLabelText('Amount in XTZ'), '0.5');
+  await user.click(screen.getByRole('button', { name: 'Switch account' }));
+  expect(screen.getByText(address)).toBeTruthy();
+  expect(screen.getByLabelText('Amount in XTZ')).toHaveProperty('value', '0.5');
+  expect(screen.getByLabelText('Receiver address')).toHaveProperty('value', address);
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Switch account' })).toHaveProperty('disabled', false);
+});
+
+it('permits another connection after closing the chooser without an account', async () => {
+  wallet.connectWallet.mockResolvedValueOnce(null);
+  render(<App />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole('button', { name: 'Connect wallet' }));
+  expect(screen.queryByRole('alert')).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Connect wallet' }));
+  expect(await screen.findByText(address)).toBeTruthy();
 });

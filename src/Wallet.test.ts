@@ -8,6 +8,9 @@ import {
 } from './Wallet';
 
 const mocks = vi.hoisted(() => ({
+  options: undefined as
+    | { eventHandlers?: Record<string, { handler: () => Promise<void> }> }
+    | undefined,
   account: vi.fn(),
   subscribe: vi.fn(),
   permissions: vi.fn(),
@@ -19,8 +22,14 @@ const mocks = vi.hoisted(() => ({
   status: vi.fn(),
 }));
 vi.mock('@taquito/beacon-wallet', () => ({
-  BeaconEvent: { ACTIVE_ACCOUNT_SET: 'ACTIVE_ACCOUNT_SET' },
+  BeaconEvent: {
+    ACTIVE_ACCOUNT_SET: 'ACTIVE_ACCOUNT_SET',
+    PERMISSION_REQUEST_ERROR: 'PERMISSION_REQUEST_ERROR',
+  },
   BeaconWallet: class {
+    constructor(options: { eventHandlers?: Record<string, { handler: () => Promise<void> }> }) {
+      mocks.options = options;
+    }
     client = { getActiveAccount: mocks.account, subscribeToEvent: mocks.subscribe };
     requestPermissions = mocks.permissions;
     clearActiveAccount = mocks.clear;
@@ -131,4 +140,37 @@ it('ends the wallet session through the reconnectable disconnect API', async () 
   expect(mocks.disconnect).toHaveBeenCalledOnce();
   expect(mocks.clear).not.toHaveBeenCalled();
   await expect(connectWallet()).resolves.toBe(address);
+});
+
+it('treats the SDK non-Error abort as cancelled account selection', async () => {
+  mocks.permissions.mockRejectedValueOnce({
+    name: 'UnknownBeaconError',
+    title: 'Aborted',
+    message: '[ABORTED_ERROR]:The action was aborted by the user.',
+  });
+  await expect(connectWallet()).resolves.toBeNull();
+  expect(mocks.account).not.toHaveBeenCalled();
+  expect(mocks.disconnect).not.toHaveBeenCalled();
+});
+
+it('preserves real permission failures for the application', async () => {
+  mocks.permissions.mockRejectedValueOnce({
+    message: '[NETWORK_NOT_SUPPORTED]:Select a supported network.',
+  });
+  await expect(connectWallet()).rejects.toThrow('Select a supported network.');
+});
+
+it('lets the app handle permission errors without overriding the pairing UI', async () => {
+  expect(Object.keys(mocks.options?.eventHandlers ?? {})).toEqual(['PERMISSION_REQUEST_ERROR']);
+  const handler = mocks.options?.eventHandlers?.['PERMISSION_REQUEST_ERROR']?.handler;
+  if (!handler) throw new Error('Missing permission error handler');
+  await expect(handler()).resolves.toBeUndefined();
+});
+
+it('normalizes non-Error permission failures and retains their cause', async () => {
+  const cause = { message: '[NETWORK_NOT_SUPPORTED]:Select a supported network.' };
+  mocks.permissions.mockRejectedValueOnce(cause);
+  const failure: unknown = await connectWallet().catch((error: unknown) => error);
+  expect(failure).toBeInstanceOf(Error);
+  expect(failure).toHaveProperty('cause', cause);
 });

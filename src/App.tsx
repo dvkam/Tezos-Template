@@ -63,7 +63,9 @@ function App() {
         if (data.get('intent') === 'disconnect') {
           await disconnectWallet();
         } else {
-          nextAddress = await connectWallet();
+          const selectedAddress = await connectWallet();
+          if (selectedAddress === null) return { error: null, revision: startedRevision };
+          nextAddress = selectedAddress;
         }
         if (sessionRevision.current === startedRevision) {
           sessionRevision.current += 1;
