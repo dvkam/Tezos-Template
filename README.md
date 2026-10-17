@@ -1,41 +1,51 @@
-# Tezos Blockchain dApp
+# Tezos wallet template
 
-This is a simple dApp template that demonstrates the integration and interaction with the Tezos blockchain, showcasing: 
- - how a user connects/disconnects a wallet
- - how to retrieve and display the wallet address and balance
- - how to send Tezos to another address
- 
- > The favicon and specific background colors are from the Tezos [Visual Identity](https://tezos.com/visual-identity/) guide.
+A small React application for connecting a Beacon-compatible wallet, displaying its address
+and balance, and sending test XTZ on Ghostnet. The favicon is from the Tezos visual identity.
 
-## Getting Started
+## Development
 
-1. Make sure you have https://nodejs.org/ installed on your computer
-2. Create a new repository by clicking "Use this template".
-3. Clone your new repository:
+Use Node 24 (`.nvmrc`) and pnpm 12.14.0 (`packageManager` in `package.json`).
 
-   `git clone <YOUR_REPOSITORY_URL>`
+```sh
+nvm use
+corepack enable
+pnpm install --frozen-lockfile
+pnpm run dev
+```
 
-4. Change your current working directory to the newly cloned repository directory.
-5. Install dependencies:
+Open the URL Vite prints. The app uses the Ghostnet RPC at `https://ghostnet.ecadinfra.com`.
+It rejects active accounts from another network. Use a funded Ghostnet wallet for manual
+connection and transfer checks; automated tests mock wallet calls and never transfer funds.
 
-   `npm install`
+## Verification
 
-6. Start development server:
+```sh
+pnpm run lint          # Type-aware oxlint, including React hooks and promise rules
+pnpm run format:check  # Oxfmt formatting check
+pnpm run typecheck     # Strict app and build-configuration TypeScript checks
+pnpm test              # Validation, wallet-adapter, and React interaction tests
+pnpm run build         # All checks and tests, then the Vite production build
+pnpm run preview       # Serve dist/ locally
+pnpm run format        # Format template files
+```
 
-   `npm run dev`
+Vite 8 and its React plugin use Oxc. React form actions expose pending and error states.
+Amounts accept up to six decimal places and are converted to safe integer mutez before
+calling Taquito. Failed transfers keep the entered values; successful transfers refresh
+the balance. Wallet controls are disabled while a transfer is confirming.
 
-7. Open http://localhost:5173/ in your browser to see a sample application.
+Shared `tsconfig.base.json` enables strictest-style checks for browser and tooling code.
+`pnpm-workspace.yaml` enables automatic dependency deduplication and records resolution
+settings for reproducible frozen installs. Taquito's Angular-only installation patch is
+explicitly disabled because this template uses React.
 
-## Building the App
+## Continuous integration
 
-1. Run the command:
+GitHub Actions runs a frozen install and `pnpm run build` on pushes and pull requests.
+The workflow uses read-only repository permissions. Vite reports bundle sizes in the build
+log. The former Jenkins pipeline, automatic baseline commits, and PR-comment machinery
+have been removed. CI does not deploy the app or perform wallet transactions.
 
-   `npm run build`
-
-2. After you have build the app you can run it locally:
-
-   `npm run preview`
-
-3. Open http://localhost:4173/ in your browser to see the production build.
-
-For more information read the [Vite Guide](https://vitejs.dev/guide/static-deploy.html)
+Local planning notes (`ANALYSIS.md`, `PRODUCT.md`, and `oracle/`) are outside the tracked
+template and excluded from formatting. They are not part of this migration.
