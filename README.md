@@ -33,7 +33,11 @@ pnpm run preview       # Serve dist/ locally
 pnpm run format        # Format template files
 ```
 
-Vite 8 and its React plugin use Oxc. React form actions expose pending and error states.
+Vite 8 uses Oxc for TypeScript/JSX transformation. Its experimental native React Compiler
+(`oxc-transform-react`) automatically memoizes eligible components and hooks, with
+recoverable compiler diagnostics logged during development and builds.
+Vitest shares the Vite configuration, so interaction tests run the compiled components.
+React form actions expose pending and error states.
 Amounts accept up to six decimal places and are converted to safe integer mutez before
 calling Taquito. Failed transfers keep the entered values; successful transfers refresh
 the balance. Wallet controls are disabled while a transfer is confirming.
