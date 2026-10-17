@@ -1,7 +1,7 @@
 # Tezos wallet template
 
 A small React application for connecting a Beacon-compatible wallet, displaying its address
-and balance, and sending test XTZ on Ghostnet. The favicon is from the Tezos visual identity.
+and balance, and sending test XTZ on Shadownet. The favicon is from the Tezos visual identity.
 
 ## Development
 
@@ -14,11 +14,11 @@ pnpm install --frozen-lockfile
 pnpm run dev
 ```
 
-Open the URL Vite prints. The app uses the Ghostnet RPC at `https://ghostnet.ecadinfra.com`.
+Open the URL Vite prints. The app uses the Shadownet RPC at `https://tezos-shadownet.octez.io`.
 Taquito 25 uses its maintained Beacon fork. Beacon enums and types come from
 `@taquito/beacon-wallet/types`, so the app needs no separate Beacon SDK dependency.
 Disconnect ends the wallet session through the reconnectable `wallet.disconnect()` API.
-It rejects active accounts from another network. Use a funded Ghostnet wallet for manual
+It rejects active accounts from another network. Use a funded Shadownet wallet for manual
 connection and transfer checks; automated tests mock wallet calls and never transfer funds.
 
 ## Verification

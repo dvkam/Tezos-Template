@@ -3,16 +3,19 @@ import { NetworkType, PermissionScope } from '@taquito/beacon-wallet/types';
 import { TezosToolkit } from '@taquito/taquito';
 import { parseTransfer } from './transfer';
 
-const rpcUrl = 'https://ghostnet.ecadinfra.com';
+const rpcUrl = 'https://tezos-shadownet.octez.io';
 const tezos = new TezosToolkit(rpcUrl);
-const wallet = new BeaconWallet({ name: 'Tezos Template', preferredNetwork: NetworkType.GHOSTNET });
+const wallet = new BeaconWallet({
+  name: 'Tezos Template',
+  preferredNetwork: NetworkType.SHADOWNET,
+});
 tezos.setWalletProvider(wallet);
 
 type ActiveAccount = Awaited<ReturnType<typeof wallet.client.getActiveAccount>>;
 
 function accountAddress(account: ActiveAccount) {
-  if (account && account.network.type !== NetworkType.GHOSTNET) {
-    throw new Error('Select a Ghostnet wallet account to use this test-network template.');
+  if (account && account.network.type !== NetworkType.SHADOWNET) {
+    throw new Error('Select a Shadownet wallet account to use this test-network template.');
   }
   return account?.address;
 }
