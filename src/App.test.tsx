@@ -143,3 +143,80 @@ it('updates external account changes and ignores the old account balance', async
   expect(screen.queryByLabelText('Receiver address')).toBeNull();
   expect(screen.getByRole('button', { name: 'Connect wallet' })).toBeTruthy();
 });
+
+it.each(['success', 'failure'] as const)(
+  'ignores a late transfer %s after the account changes away and back',
+  async (outcome) => {
+    wallet.getAccountAddress.mockResolvedValue(address);
+    let complete!: (value: string) => void;
+    let reject!: (reason: Error) => void;
+    wallet.sendTezos.mockImplementationOnce(
+      () =>
+        new Promise((resolve, fail) => {
+          complete = resolve;
+          reject = fail;
+        }),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(await screen.findByLabelText('Receiver address'), address);
+    await user.type(screen.getByLabelText('Amount in XTZ'), '0.1');
+    await user.click(screen.getByRole('button', { name: 'Send test XTZ' }));
+    const observer = wallet.subscribeAccount.mock.calls[0]?.[0];
+    if (!observer) throw new Error('Missing account observer');
+    await act(async () => observer('tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6', undefined));
+    await act(async () => observer(address, undefined));
+    await screen.findByText('Balance: 1.234567 ꜩ');
+    const reads = wallet.getBalance.mock.calls.length;
+    await act(async () => {
+      if (outcome === 'success') complete('old-operation');
+      else reject(new Error('Old transfer failed'));
+    });
+    expect(screen.queryByText('Confirmed operation: old-operation')).toBeNull();
+    expect(screen.queryByText('Old transfer failed')).toBeNull();
+    expect(wallet.getBalance).toHaveBeenCalledTimes(reads);
+    expect(screen.getByRole('button', { name: 'Send test XTZ' })).toHaveProperty('disabled', false);
+  },
+);
+
+it.each(['success', 'failure'] as const)(
+  'ignores a late connect %s after an external account update',
+  async (outcome) => {
+    let complete!: (value: string) => void;
+    let reject!: (reason: Error) => void;
+    wallet.connectWallet.mockImplementationOnce(
+      () =>
+        new Promise((resolve, fail) => {
+          complete = resolve;
+          reject = fail;
+        }),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(await screen.findByRole('button', { name: 'Connect wallet' }));
+    const observer = wallet.subscribeAccount.mock.calls[0]?.[0];
+    if (!observer) throw new Error('Missing account observer');
+    const second = 'tz1aSkwEot3L2kmUvcoxzjMomb9mvBNuzFK6';
+    await act(async () => observer(second, undefined));
+    await act(async () => {
+      if (outcome === 'success') complete(address);
+      else reject(new Error('Old connection failed'));
+    });
+    expect(screen.getByText(second)).toBeTruthy();
+    expect(screen.queryByText(address)).toBeNull();
+    expect(screen.queryByText('Old connection failed')).toBeNull();
+  },
+);
+
+it('retries a failed balance read without reconnecting the wallet', async () => {
+  wallet.getAccountAddress.mockResolvedValue(address);
+  wallet.getBalance.mockRejectedValueOnce(new Error('Balance request failed'));
+  const user = userEvent.setup();
+  render(<App />);
+  expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Balance request failed');
+  await user.click(screen.getByRole('button', { name: 'Retry balance' }));
+  expect(await screen.findByText('Balance: 1.234567 ꜩ')).toBeTruthy();
+  expect(screen.queryByText('Balance request failed')).toBeNull();
+  expect(wallet.getBalance).toHaveBeenCalledTimes(2);
+  expect(wallet.connectWallet).not.toHaveBeenCalled();
+});
