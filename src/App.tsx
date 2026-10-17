@@ -1,17 +1,19 @@
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { connectWallet, disconnectWallet, subscribeAccount, getBalance, sendTezos } from './Wallet';
 
 type BalanceResult = { address: string; revision: number; value?: string; error?: string };
 type TransferResult = {
   error: string | null;
   operation: string | null;
-  address: string | undefined;
+  revision: number;
 };
-const initialTransfer: TransferResult = { error: null, operation: null, address: undefined };
+const initialTransfer: TransferResult = { error: null, operation: null, revision: -1 };
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'The wallet request failed. Please try again.';
 
 function App() {
+  const sessionRevision = useRef(0);
+  const [revision, setRevision] = useState(0);
   const [address, setAddress] = useState<string>();
   const [restoring, setRestoring] = useState(true);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -23,6 +25,8 @@ function App() {
   useEffect(
     () =>
       subscribeAccount((value, error) => {
+        sessionRevision.current += 1;
+        setRevision(sessionRevision.current);
         setAddress(value);
         setRestoreError(error === undefined ? null : errorMessage(error));
         setRestoring(false);
@@ -50,31 +54,42 @@ function App() {
     };
   }, [address, balanceRevision]);
 
-  const [walletError, walletAction, walletPending] = useActionState(
-    async (_previous: string | null, data: FormData): Promise<string | null> => {
+  const [walletResult, walletAction, walletPending] = useActionState(
+    async (_previous: { error: string | null; revision: number }, data: FormData) => {
+      const startedRevision = sessionRevision.current;
       setRestoreError(null);
       try {
+        let nextAddress: string | undefined;
         if (data.get('intent') === 'disconnect') {
           await disconnectWallet();
-          setAddress(undefined);
         } else {
-          setAddress(await connectWallet());
-          setBalanceRevision((value) => value + 1);
+          nextAddress = await connectWallet();
         }
-        setReceiver('');
-        setAmount('');
-        return null;
+        if (sessionRevision.current === startedRevision) {
+          sessionRevision.current += 1;
+          setRevision(sessionRevision.current);
+          setAddress(nextAddress);
+          setBalanceRevision((value) => value + 1);
+          setReceiver('');
+          setAmount('');
+        }
+        return { error: null, revision: startedRevision };
       } catch (error) {
-        return errorMessage(error);
+        return { error: errorMessage(error), revision: startedRevision };
       }
     },
-    null,
+    { error: null, revision: -1 },
   );
 
   const [transferResult, transferAction, transferPending] = useActionState(
     async (_previous: TransferResult, data: FormData): Promise<TransferResult> => {
+      const startedRevision = sessionRevision.current;
       if (!address) {
-        return { error: 'Connect a wallet before sending test XTZ.', operation: null, address };
+        return {
+          error: 'Connect a wallet before sending test XTZ.',
+          operation: null,
+          revision: startedRevision,
+        };
       }
       const receiverValue = data.get('receiver');
       const amountValue = data.get('amount');
@@ -82,17 +97,20 @@ function App() {
       const amountText = typeof amountValue === 'string' ? amountValue : '';
       try {
         const operation = await sendTezos(receiverText, amountText, address);
-        setBalanceRevision((value) => value + 1);
-        setReceiver('');
-        setAmount('');
-        return { error: null, operation, address };
+        if (sessionRevision.current === startedRevision) {
+          setBalanceRevision((value) => value + 1);
+          setReceiver('');
+          setAmount('');
+        }
+        return { error: null, operation, revision: startedRevision };
       } catch (error) {
-        return { error: errorMessage(error), operation: null, address };
+        return { error: errorMessage(error), operation: null, revision: startedRevision };
       }
     },
     initialTransfer,
   );
 
+  const walletError = walletResult.revision === revision ? walletResult.error : null;
   const busy = restoring || walletPending || transferPending;
   const currentBalance =
     balanceResult && balanceResult.address === address && balanceResult.revision === balanceRevision
@@ -174,13 +192,13 @@ function App() {
             <button type="submit" disabled={busy}>
               {transferPending ? 'Confirming transfer…' : 'Send test XTZ'}
             </button>
-            {!transferPending && transferResult.address === address && transferResult.error && (
+            {!transferPending && transferResult.revision === revision && transferResult.error && (
               <p role="alert">{transferResult.error}</p>
             )}
             <output className="operation" aria-live="polite" aria-atomic="true">
               {transferPending
                 ? 'Waiting for wallet approval and network confirmation…'
-                : transferResult.address === address && transferResult.operation
+                : transferResult.revision === revision && transferResult.operation
                   ? `Confirmed operation: ${transferResult.operation}`
                   : ''}
             </output>
