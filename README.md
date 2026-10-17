@@ -52,7 +52,23 @@ Angular-only installation-script exception.
 GitHub Actions runs a frozen install and `pnpm run build` on pushes and pull requests.
 The workflow uses read-only repository permissions. Vite reports bundle sizes in the build
 log. The former Jenkins pipeline, automatic baseline commits, and PR-comment machinery
-have been removed. CI does not deploy the app or perform wallet transactions.
+have been removed. The validation workflow does not deploy the app or perform wallet transactions.
+The separate Pages workflow publishes successful builds from `main`.
 
 Local planning notes (`ANALYSIS.md`, `PRODUCT.md`, and `oracle/`) are outside the tracked
 template and excluded from formatting. They are not part of this migration.
+
+## GitHub Pages
+
+Live demo: [dvkam.github.io/Tezos-Template](https://dvkam.github.io/Tezos-Template/).
+
+The Pages workflow deploys pushes to `main` after the full build and checks pass. It can also be run manually from that branch. The workflow uses GitHub Pages metadata to set the asset base path, while local development keeps `/`.
+
+To build the Pages layout locally:
+
+```sh
+PAGES_BASE_PATH=/Tezos-Template/ pnpm build
+PAGES_BASE_PATH=/Tezos-Template/ pnpm preview
+```
+
+GitHub Pages must use the GitHub Actions publishing source. Deployments use the `github-pages` environment and GitHub's short-lived deployment token. No separate deployment secret is required.
