@@ -1,6 +1,6 @@
-import { BeaconWallet } from '@taquito/beacon-wallet';
+import { BeaconWallet, BeaconEvent } from '@taquito/beacon-wallet';
+import { NetworkType, PermissionScope } from '@taquito/beacon-wallet/types';
 import { TezosToolkit } from '@taquito/taquito';
-import { BeaconEvent, NetworkType, PermissionScope, type AccountInfo } from '@airgap/beacon-sdk';
 import { parseTransfer } from './transfer';
 
 const rpcUrl = 'https://ghostnet.ecadinfra.com';
@@ -8,7 +8,9 @@ const tezos = new TezosToolkit(rpcUrl);
 const wallet = new BeaconWallet({ name: 'Tezos Template', preferredNetwork: NetworkType.GHOSTNET });
 tezos.setWalletProvider(wallet);
 
-function accountAddress(account: AccountInfo | undefined) {
+type ActiveAccount = Awaited<ReturnType<typeof wallet.client.getActiveAccount>>;
+
+function accountAddress(account: ActiveAccount) {
   if (account && account.network.type !== NetworkType.GHOSTNET) {
     throw new Error('Select a Ghostnet wallet account to use this test-network template.');
   }
@@ -29,7 +31,7 @@ export function subscribeAccount(observer: AccountObserver) {
   accountObservers.add(observer);
   accountSubscription ??= wallet.client.subscribeToEvent(
     BeaconEvent.ACTIVE_ACCOUNT_SET,
-    (account: AccountInfo | undefined) => {
+    (account: ActiveAccount) => {
       accountRevision += 1;
       let address: string | undefined;
       let error: unknown;
@@ -72,7 +74,7 @@ export async function connectWallet() {
   return address;
 }
 
-export const disconnectWallet = () => wallet.clearActiveAccount();
+export const disconnectWallet = () => wallet.disconnect();
 
 export async function getBalance(address: string) {
   return (await tezos.tz.getBalance(address)).dividedBy(1_000_000).toFixed();

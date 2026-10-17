@@ -15,10 +15,9 @@
     "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck"
   },
   "dependencies": {
-    "@airgap/beacon-sdk": "^4.6.1",
-    "@taquito/beacon-wallet": "^23.0.2",
-    "@taquito/taquito": "^23.0.2",
-    "@taquito/utils": "23.0.2",
+    "@taquito/beacon-wallet": "25.0.0",
+    "@taquito/taquito": "25.0.0",
+    "@taquito/utils": "25.0.0",
     "buffer": "^6.0.3",
     "events": "^3.3.0",
     "react": "19.3.1",

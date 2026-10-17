@@ -2,6 +2,3 @@ autoDedupe: true
 
 lockfile:
   includeResolutionSettings: true
-
-allowBuilds:
-  '@taquito/taquito': false
