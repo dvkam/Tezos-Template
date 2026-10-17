@@ -37,7 +37,7 @@ const address = 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb';
 
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.account.mockResolvedValue({ address, network: { type: 'ghostnet' } });
+  mocks.account.mockResolvedValue({ address, network: { type: 'shadownet' } });
   mocks.permissions.mockResolvedValue(undefined);
   mocks.disconnect.mockResolvedValue(undefined);
   mocks.subscribe.mockResolvedValue(undefined);
@@ -51,12 +51,15 @@ beforeEach(() => {
   mocks.status.mockResolvedValue('applied');
 });
 
-it('rejects accounts from another network before constructing a transfer', async () => {
-  mocks.account.mockResolvedValue({ address, network: { type: 'mainnet' } });
-  await expect(getAccountAddress()).rejects.toThrow(/Ghostnet/);
-  await expect(sendTezos(address, '1', address)).rejects.toThrow(/Ghostnet/);
-  expect(mocks.transfer).not.toHaveBeenCalled();
-});
+it.each(['mainnet', 'ghostnet'])(
+  'rejects %s accounts before constructing a transfer',
+  async (network) => {
+    mocks.account.mockResolvedValue({ address, network: { type: network } });
+    await expect(getAccountAddress()).rejects.toThrow(/Shadownet/);
+    await expect(sendTezos(address, '1', address)).rejects.toThrow(/Shadownet/);
+    expect(mocks.transfer).not.toHaveBeenCalled();
+  },
+);
 
 it('rejects invalid or disconnected transfers before asking the wallet to send', async () => {
   await expect(sendTezos(address, 'NaN', address)).rejects.toThrow();
@@ -114,7 +117,7 @@ it('observes account changes, validates their network, and cleans up without dup
   expect(observer).toHaveBeenLastCalledWith(undefined, expect.any(Error));
   stop();
   observer.mockClear();
-  changed({ address, network: { type: 'ghostnet' } });
+  changed({ address, network: { type: 'shadownet' } });
   expect(observer).not.toHaveBeenCalled();
   const next = vi.fn();
   const stopNext = subscribeAccount(next);

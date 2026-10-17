@@ -102,7 +102,7 @@ function App() {
   return (
     <main className="wallet-app">
       <header>
-        <p className="network">Ghostnet test network</p>
+        <p className="network">Shadownet test network</p>
         <h1>Tezos wallet template</h1>
         <p>Connect a wallet, check its balance, and send test XTZ.</p>
       </header>
