@@ -148,9 +148,6 @@ function App() {
         <section aria-labelledby="account-heading">
           <h2 id="account-heading">Your account</h2>
           <p className="address">{address}</p>
-          <p aria-label="Short address">
-            {address.slice(0, 5)}…{address.slice(-5)}
-          </p>
           {currentBalance?.error ? (
             <div>
               <p role="alert">{currentBalance.error}</p>
