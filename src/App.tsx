@@ -152,7 +152,16 @@ function App() {
             {address.slice(0, 5)}…{address.slice(-5)}
           </p>
           {currentBalance?.error ? (
-            <p role="alert">{currentBalance.error}</p>
+            <div>
+              <p role="alert">{currentBalance.error}</p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setBalanceRevision((value) => value + 1)}
+              >
+                Retry balance
+              </button>
+            </div>
           ) : (
             <output>
               {currentBalance?.value === undefined

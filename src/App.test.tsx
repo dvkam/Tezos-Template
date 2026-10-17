@@ -207,3 +207,16 @@ it.each(['success', 'failure'] as const)(
     expect(screen.queryByText('Old connection failed')).toBeNull();
   },
 );
+
+it('retries a failed balance read without reconnecting the wallet', async () => {
+  wallet.getAccountAddress.mockResolvedValue(address);
+  wallet.getBalance.mockRejectedValueOnce(new Error('Balance request failed'));
+  const user = userEvent.setup();
+  render(<App />);
+  expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Balance request failed');
+  await user.click(screen.getByRole('button', { name: 'Retry balance' }));
+  expect(await screen.findByText('Balance: 1.234567 ꜩ')).toBeTruthy();
+  expect(screen.queryByText('Balance request failed')).toBeNull();
+  expect(wallet.getBalance).toHaveBeenCalledTimes(2);
+  expect(wallet.connectWallet).not.toHaveBeenCalled();
+});
