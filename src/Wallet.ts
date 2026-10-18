@@ -8,6 +8,10 @@ const tezos = new TezosToolkit(rpcUrl);
 const wallet = new BeaconWallet({
   name: 'Tezos Template',
   preferredNetwork: NetworkType.SHADOWNET,
+  eventHandlers: {
+    // Permission errors are handled by the app, including a cancelled chooser.
+    [BeaconEvent.PERMISSION_REQUEST_ERROR]: { handler: () => Promise.resolve() },
+  },
 });
 tezos.setWalletProvider(wallet);
 
@@ -68,10 +72,21 @@ export function subscribeAccount(observer: AccountObserver) {
   };
 }
 
-export async function connectWallet() {
-  await wallet.requestPermissions({
-    scopes: [PermissionScope.OPERATION_REQUEST],
-  });
+export async function connectWallet(): Promise<string | null> {
+  try {
+    await wallet.requestPermissions({
+      scopes: [PermissionScope.OPERATION_REQUEST],
+    });
+  } catch (cause) {
+    // Beacon errors have a message but do not extend the JavaScript Error class.
+    const message =
+      cause && typeof cause === 'object' && 'message' in cause && typeof cause.message === 'string'
+        ? cause.message
+        : undefined;
+    if (message?.startsWith('[ABORTED_ERROR]:')) return null;
+    if (message) throw new Error(message, { cause });
+    throw cause;
+  }
   const address = await getAccountAddress();
   if (!address) throw new Error('The wallet did not return an account address.');
   return address;
